@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>吴迪 · 霓虹解构体</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #0b0710;
+            font-family: 'Space Grotesk', 'Poppins', 'Rajdhani', monospace;
+            overflow-x: hidden;
+            color: #eef5ff;
+            position: relative;
+        }
+
+        /* 动态噪点背景层 */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-radial-gradient(circle at 20% 30%, rgba(0,255,255,0.02) 0px, rgba(255,0,200,0.02) 2px, transparent 4px);
+            pointer-events: none;
+            z-index: 1;
+            mix-blend-mode: overlay;
+            animation: noiseShift 8s steps(2) infinite;
+        }
+        @keyframes noiseShift {
+            0% { background-position: 0 0; }
+            100% { background-position: 100% 100%; }
+        }
+
+        /* 动态流光线条背景 */
+        .flow-lines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.5;
+        }
+        canvas#waveCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: 0;
+        }
+
+        /* 鼠标光晕——紫色霓虹 */
+        .cursor-glow-neon {
+            position: fixed;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(180, 0, 255, 0.3) 0%, rgba(0, 255, 255, 0) 80%);
+            border-radius: 50%;
+            filter: blur(70px);
+            pointer-events: none;
+            z-index: 2;
+            transform: translate(-50%, -50%);
+            transition: transform 0.08s linear;
+        }
+
+        /* 主容器——几何分割布局 */
+        .hero-split {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        /* 不规则多边形卡片 */
+        .cyber-card {
+            max-width: 620px;
+            width: 100%;
+            background: rgba(8, 5, 18, 0.65);
+            backdrop-filter: blur(12px);
+            border-radius: 0;
+            clip-path: polygon(0% 0%, 100% 0%, 100% 85%, 92% 100%, 8% 100%, 0% 85%);
+            border: 1px solid #ff00cc;
+            border-top-color: #0ff;
+            border-right-color: #ff44ee;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,0,200,0.3) inset, 0 0 20px rgba(0,255,255,0.3);
+            padding: 2.2rem 2rem 2.5rem;
+            transition: all 0.25s ease;
+            transform: rotate(0deg);
+        }
+        .cyber-card:hover {
+            box-shadow: 0 25px 50px rgba(255,0,200,0.3), 0 0 0 2px rgba(0,255,255,0.5) inset;
+            border-color: #0ff;
+        }
+
+        /* 头像区域——霓虹灯环 + 故障闪烁 */
+        .avatar-neon {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 1.5rem;
+        }
+        .avatar-neon img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #ff00cc;
+            box-shadow: 0 0 15px #ff00cc, 0 0 5px cyan;
+            background: #000;
+            transition: 0.2s;
+        }
+        .avatar-neon::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            bottom: -8px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 255, 255, 0.7);
+            border-top-color: #ff44ee;
+            border-right-color: #ff44ee;
+            animation: spinRing 4s linear infinite;
+            box-shadow: 0 0 20px cyan;
+        }
+        @keyframes spinRing {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* 故障闪烁 */
+        .avatar-neon::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255,0,200,0.2);
+            mix-blend-mode: overlay;
+            animation: glitchFlash 1.8s infinite;
+            pointer-events: none;
+        }
+        @keyframes glitchFlash {
+            0%, 100% { opacity: 0; }
+            92% { opacity: 0.3; }
+            94% { opacity: 0.8; }
+            96% { opacity: 0; }
+        }
+
+        /* 姓名——双重霓虹阴影 */
+        .name-neon {
+            text-align: center;
+            font-size: 3rem;
+            font-weight: 800;
+            font-family: 'Orbitron', monospace;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: #fff;
+            text-shadow: 0 0 5px #ff00cc, 0 0 12px cyan, 0 0 20px #ff00cc;
+            margin-bottom: 0.2rem;
+            animation: textFlicker 3s infinite;
+        }
+        @keyframes textFlicker {
+            0%, 100% { text-shadow: 0 0 5px #ff00cc, 0 0 12px cyan; opacity: 1; }
+            50% { text-shadow: 0 0 8px #ff00cc, 0 0 20px cyan, 0 0 25px #ff00cc; }
+        }
+
+        .sub-neon {
+            text-align: center;
+            font-size: 0.75rem;
+            letter-spacing: 5px;
+            color: #ffaaff;
+            border-bottom: 1px dashed #ff44ee;
+            display: inline-block;
+            width: auto;
+            margin: 0 auto 1.5rem;
+            padding-bottom: 0.3rem;
+        }
+
+        /* 数据面板——极简赛博线条 */
+        .data-neon {
+            display: flex;
+            flex-direction: column;
+            gap: 1.1rem;
+            margin: 1.5rem 0;
+        }
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.7rem 1rem;
+            background: rgba(0, 0, 0, 0.4);
+            border-left: 4px solid #ff00cc;
+            border-right: 1px solid rgba(0,255,255,0.3);
+            transition: all 0.2s;
+        }
+        .data-item:hover {
+            background: rgba(255, 0, 200, 0.15);
+            transform: translateX(6px);
+            border-left-width: 6px;
+        }
+        .data-label {
+            font-weight: 600;
+            letter-spacing: 1px;
+            font-size: 1rem;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .data-value {
+            font-weight: 800;
+            font-size: 1.2rem;
+            font-family: monospace;
+            color: #0ff;
+            text-shadow: 0 0 4px cyan;
+        }
+        .age-glow, .height-glow {
+            font-size: 1.5rem;
+            font-weight: 900;
+            background: linear-gradient(145deg, #fff, #ff44ee);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        /* 联系方式——霓虹按钮组 */
+        .contact-neon {
+            margin: 1.8rem 0 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.6rem 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            border: 1px solid #ff00cc;
+            border-radius: 0;
+            clip-path: polygon(2% 0%, 98% 0%, 100% 30%, 98% 100%, 2% 100%, 0% 70%);
+        }
+        .email-neon {
+            font-size: 0.9rem;
+            font-weight: 500;
+            word-break: break-all;
+            color: #f0b0ff;
+        }
+        .copy-neon {
+            background: rgba(255, 0, 200, 0.2);
+            border: 1px solid #ff44ee;
+            padding: 6px 20px;
+            font-weight: bold;
+            color: #ff88ff;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: monospace;
+            clip-path: polygon(10% 0%, 90% 0%, 100% 40%, 90% 100%, 10% 100%, 0% 60%);
+        }
+        .copy-neon:hover {
+            background: #ff00cc;
+            color: #000;
+            box-shadow: 0 0 15px #ff44ee;
+            transform: scale(0.98);
+        }
+
+        /* 标签组——故障几何 */
+        .tag-neon {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.8rem;
+            margin-top: 1.5rem;
+        }
+        .tag-neon span {
+            background: rgba(0, 0, 0, 0.5);
+            border: 0.5px solid #ff44ee;
+            padding: 0.3rem 1rem;
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            transition: 0.2s;
+            clip-path: polygon(0% 0%, 100% 0%, 95% 100%, 5% 100%);
+        }
+        .tag-neon span:hover {
+            background: #ff44ee;
+            color: black;
+            box-shadow: 0 0 12px #ff44ee;
+            transform: translateY(-2px);
+        }
+
+        .footer-neon {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.65rem;
+            opacity: 0.7;
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 550px) {
+            .cyber-card { padding: 1.5rem; clip-path: polygon(0% 0%, 100% 0%, 100% 90%, 96% 100%, 4% 100%, 0% 90%); }
+            .name-neon { font-size: 2.2rem; }
+            .data-value { font-size: 1rem; }
+            .age-glow, .height-glow { font-size: 1.3rem; }
+            .avatar-neon { width: 110px; height: 110px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="noise-overlay"></div>
+    <canvas id="waveCanvas"></canvas>
+    <div class="cursor-glow-neon" id="cursorNeon"></div>
+
+    <div class="hero-split">
+        <div class="cyber-card">
+            <div class="avatar-neon">
+                <img src="app/1.png" alt="吴迪" onerror="this.src='https://placehold.co/400x400/1a0a2a/ff44ee?text=WU+DI'">
+            </div>
+            <div class="name-neon">吴 迪</div>
+            <div style="text-align: center;"><div class="sub-neon">✦ 霓虹叛客 · 编码永生 ✦</div></div>
+
+            <div class="data-neon">
+                <div class="data-item">
+                    <div class="data-label"><span>🖤</span> 诞生日</div>
+                    <div class="data-value">2004.05.23 · 双子座</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label"><span>⚡</span> 动态年龄</div>
+                    <div class="data-value"><span id="cyberAge" class="age-glow">0</span> 岁</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label"><span>📐</span> 超维身高</div>
+                    <div class="data-value"><span id="cyberHeight" class="height-glow">195</span> cm</div>
+                </div>
+            </div>
+
+            <div class="contact-neon">
+                <div class="email-neon">📧 2658521367@qq.com</div>
+                <button class="copy-neon" id="copyNeonBtn">复制·霓虹码</button>
+            </div>
+
+            <div class="tag-neon">
+                <span># NEON DRIVER</span>
+                <span># 195cm CYBER GIANT</span>
+                <span># GLITCH ARTIFACT</span>
+                <span># QUANTUM LEAK</span>
+                <span># INFINITE LOOP</span>
+            </div>
+            <div class="footer-neon">
+                ⚡ 数据湍流 · 超频存在 ⚡
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function(){
+            // 1. 年龄计算 (2004.05.23)
+            const birthDate = new Date(2004, 4, 23);
+            function calcAge() {
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if(m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+                return age;
+            }
+            const REAL_AGE = calcAge();
+            const REAL_HGT = 195;
+
+            // 动态数字滚动 (霓虹特效)
+            const ageSpan = document.getElementById('cyberAge');
+            const heightSpan = document.getElementById('cyberHeight');
+            let startAge = 0, startHgt = 0;
+            const duration = 1000;
+            const startTime = performance.now();
+            function easeOutQuad(t) { return t * (2 - t); }
+            function animateNumbers(now) {
+                let elapsed = now - startTime;
+                let t = Math.min(1, elapsed / duration);
+                let ease = easeOutQuad(t);
+                let curAge = Math.floor(startAge + (REAL_AGE - startAge) * ease);
+                let curHgt = Math.floor(startHgt + (REAL_HGT - startHgt) * ease);
+                ageSpan.innerText = curAge;
+                heightSpan.innerText = curHgt;
+                if(t < 1) requestAnimationFrame(animateNumbers);
+                else {
+                    ageSpan.innerText = REAL_AGE;
+                    heightSpan.innerText = REAL_HGT;
+                }
+            }
+            requestAnimationFrame(animateNumbers);
+
+            // 2. 复制邮箱 + 炫酷提示
+            const copyBtn = document.getElementById('copyNeonBtn');
+            const email = "2658521367@qq.com";
+            function showNeonToast(msg) {
+                let toast = document.querySelector('.neon-toast');
+                if(!toast) {
+                    toast = document.createElement('div');
+                    toast.className = 'neon-toast';
+                    toast.style.position = 'fixed';
+                    toast.style.bottom = '30px';
+                    toast.style.left = '50%';
+                    toast.style.transform = 'translateX(-50%)';
+                    toast.style.background = '#0a0518';
+                    toast.style.backdropFilter = 'blur(16px)';
+                    toast.style.border = '1px solid #ff44ee';
+                    toast.style.borderRadius = '0px';
+                    toast.style.clipPath = 'polygon(5% 0%, 95% 0%, 100% 30%, 95% 100%, 5% 100%, 0% 70%)';
+                    toast.style.padding = '10px 28px';
+                    toast.style.fontFamily = 'monospace';
+                    toast.style.fontWeight = 'bold';
+                    toast.style.color = '#ff88ff';
+                    toast.style.zIndex = '9999';
+                    toast.style.fontSize = '0.85rem';
+                    toast.style.whiteSpace = 'nowrap';
+                    toast.style.boxShadow = '0 0 20px rgba(255,0,200,0.4)';
+                    document.body.appendChild(toast);
+                }
+                toast.textContent = msg;
+                toast.style.opacity = '1';
+                clearTimeout(window.toastT);
+                window.toastT = setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+            }
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(email).then(() => {
+                    showNeonToast('✓ 霓虹邮箱已嵌入芯片');
+                    if(navigator.vibrate) navigator.vibrate(40);
+                    copyBtn.style.transform = 'scale(0.96)';
+                    setTimeout(() => copyBtn.style.transform = '', 150);
+                }).catch(() => showNeonToast('❌ 复制失败', true));
+            });
+
+            // 3. 鼠标光晕跟随
+            const glow = document.getElementById('cursorNeon');
+            let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+            function updateGlow() {
+                glowX += (mouseX - glowX) * 0.12;
+                glowY += (mouseY - glowY) * 0.12;
+                glow.style.left = glowX + 'px';
+                glow.style.top = glowY + 'px';
+                requestAnimationFrame(updateGlow);
+            }
+            updateGlow();
+
+            // 4. 动态波形背景 canvas (流动霓虹线条)
+            const canvas = document.getElementById('waveCanvas');
+            const ctx = canvas.getContext('2d');
+            let w, h;
+            let time = 0;
+            function resizeWave() {
+                w = window.innerWidth;
+                h = window.innerHeight;
+                canvas.width = w;
+                canvas.height = h;
+            }
+            function drawWaves() {
+                if(!ctx) return;
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = '#0b0710';
+                ctx.fillRect(0, 0, w, h);
+                // 绘制多组霓虹波形
+                const step = 25;
+                for(let i = 0; i < 8; i++) {
+                    ctx.beginPath();
+                    const offset = i * 35;
+                    const amplitude = 18 + Math.sin(time * 0.5 + i) * 6;
+                    const color = `hsla(${300 + i * 15}, 80%, 65%, 0.4)`;
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1.8;
+                    for(let x = 0; x < w; x += 8) {
+                        let y = h * 0.3 + offset + Math.sin(x * 0.02 + time * 1.2 + i) * amplitude + Math.cos(x * 0.01 + time * 0.8) * 8;
+                        if(x === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+                // 第二组 下方流动线条
+                for(let i = 0; i < 6; i++) {
+                    ctx.beginPath();
+                    const offset = h - 100 + i * 18;
+                    const color = `hsla(${180 + i * 20}, 90%, 60%, 0.45)`;
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1.5;
+                    for(let x = 0; x < w; x += 6) {
+                        let y = offset + Math.sin(x * 0.018 + time * 1.8 + i) * 14;
+                        if(x === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+                // 添加粒子光点
+                for(let p=0; p<120; p++) {
+                    let px = (p * 131) % w;
+                    let py = (Math.sin(px * 0.01 + time) * 30 + h * 0.5 + (p%80));
+                    ctx.beginPath();
+                    ctx.arc(px, py, 1.2, 0, Math.PI*2);
+                    ctx.fillStyle = `hsl(${280 + Math.sin(time+px)*30}, 90%, 70%)`;
+                    ctx.fill();
+                }
+                time += 0.025;
+                requestAnimationFrame(drawWaves);
+            }
+            window.addEventListener('resize', () => { resizeWave(); });
+            resizeWave();
+            drawWaves();
+
+            // 5. 卡片倾斜效果（几何解构）
+            const card = document.querySelector('.cyber-card');
+            const hero = document.querySelector('.hero-split');
+            function onMouseMove(e) {
+                if(!card) return;
+                const rect = card.getBoundingClientRect();
+                const centerX = rect.left + rect.width/2;
+                const centerY = rect.top + rect.height/2;
+                const relX = (e.clientX - centerX) / (rect.width/2);
+                const relY = (e.clientY - centerY) / (rect.height/2);
+                const maxRot = 9;
+                const rotY = relX * maxRot;
+                const rotX = -relY * maxRot;
+                card.style.transition = 'transform 0.08s linear';
+                card.style.transform = `perspective(1200px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(4px)`;
+            }
+            function onLeave() {
+                if(card) {
+                    card.style.transition = 'transform 0.4s cubic-bezier(0.2,0.8,0.3,1)';
+                    card.style.transform = 'perspective(1200px) rotateX(0deg) rotateY(0deg)';
+                }
+            }
+            hero.addEventListener('mousemove', onMouseMove);
+            hero.addEventListener('mouseleave', onLeave);
+            if('ontouchstart' in window) {
+                hero.removeEventListener('mousemove', onMouseMove);
+                hero.removeEventListener('mouseleave', onLeave);
+                if(card) card.style.transform = '';
+            }
+
+            // 6. 右下角动态故障时间
+            const timeDiv = document.createElement('div');
+            timeDiv.style.position = 'fixed';
+            timeDiv.style.bottom = '20px';
+            timeDiv.style.right = '20px';
+            timeDiv.style.fontFamily = 'monospace';
+            timeDiv.style.fontSize = '0.7rem';
+            timeDiv.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            timeDiv.style.padding = '4px 12px';
+            timeDiv.style.borderLeft = '3px solid #ff44ee';
+            timeDiv.style.color = '#ffaaff';
+            timeDiv.style.zIndex = '99';
+            timeDiv.style.backdropFilter = 'blur(4px)';
+            document.body.appendChild(timeDiv);
+            function updateNeonTime() {
+                const now = new Date();
+                timeDiv.innerText = `⏣ ${now.toLocaleTimeString('zh-CN', { hour12: false })} · 霓虹纪元`;
+                setTimeout(updateNeonTime, 1000);
+            }
+            updateNeonTime();
+
+            // 控制台输出
+            console.log('%c⚡ 吴迪 · 霓虹解构体激活 | 年龄:'+REAL_AGE+' | 195cm | 赛博格觉醒 ⚡', 'color:#ff44ee;font-size:13px;font-weight:bold;');
+        })();
+    </script>
+</body>
+</html>
